@@ -25,12 +25,24 @@ const moveSynth = new Tone.Synth().toDestination();
 const winSynth = new Tone.Synth().toDestination();
 const shuffleSynth = new Tone.Synth().toDestination();
 
+/**
+ * Воспроизводит короткий звук при перемещении плитки.
+ */
 function playMoveSound() {
+    // Включаем Tone.js, если он еще не запущен (для совместимости с автозапуском браузера)
+    if (Tone.context.state !== 'running') {
+        Tone.start();
+    }
     moveSynth.triggerAttackRelease("C4", "8n");
 }
 
+/**
+ * Воспроизводит звук победы (аккорд).
+ */
 function playWinSound() {
-    // Более сложный звук (короткая аккордовая прогрессия)
+    if (Tone.context.state !== 'running') {
+        Tone.start();
+    }
     const now = Tone.now();
     winSynth.triggerAttackRelease("C5", "8n", now);
     winSynth.triggerAttackRelease("E5", "8n", now + 0.2);
@@ -38,8 +50,13 @@ function playWinSound() {
     winSynth.triggerAttackRelease("C6", "1n", now + 0.6);
 }
 
+/**
+ * Воспроизводит звук перемешивания (глиссандо).
+ */
 function playShuffleSound() {
-    // Более сложный звук (быстрое скольжение)
+    if (Tone.context.state !== 'running') {
+        Tone.start();
+    }
     const now = Tone.now();
     shuffleSynth.triggerAttackRelease("C3", "8n", now);
     shuffleSynth.triggerAttackRelease("D3", "8n", now + 0.1);
@@ -48,15 +65,19 @@ function playShuffleSound() {
 }
 
 
-
 // --- Инициализация Пазла (1D массив) ---
+/**
+ * Устанавливает начальное состояние пазла в упорядоченном виде.
+ */
 function initializePuzzle() {
     puzzleSize = parseInt(sizeSelect.value);
     const totalTiles = puzzleSize * puzzleSize;
     tiles = [];
+    // Заполняем плитки значениями от 1 до N*N - 1
     for (let i = 1; i < totalTiles; i++) {
         tiles.push(i);
     }
+    // Последняя плитка - пустая
     tiles.push(emptyTileValue);
     emptyIndex = totalTiles - 1;
     messageElement.textContent = '';
@@ -64,23 +85,31 @@ function initializePuzzle() {
     resetTimer();
     movesCount = 0; // Сбрасываем счетчик ходов
     movesCountElement.textContent = movesCount; // Обновляем отображение ходов
+    
+    // Устанавливаем лимит ходов для режима 'moves'
     if (gameMode === 'moves') {
         movesCounterElement.style.display = 'flex';
-        movesLimit = puzzleSize * puzzleSize * 2; // Примерное значение лимита ходов
+        // Лимит ходов: 2 * (N*N) - разумное начальное значение
+        movesLimit = puzzleSize * puzzleSize * 2; 
         messageElement.textContent = `Лимит ходов: ${movesLimit}`;
     } else {
         movesCounterElement.style.display = 'none';
+        messageElement.textContent = getStartMessage();
     }
 }
 
 // --- Отрисовка Пазла ---
+/**
+ * Отрисовывает плитки на основе текущего массива tiles.
+ */
 function renderPuzzle() {
     gridElement.innerHTML = '';
+    // Устанавливаем grid-шаблон и отступы в зависимости от размера
     gridElement.style.gridTemplateColumns = `repeat(${puzzleSize}, 1fr)`;
     gridElement.style.gap = `${Math.max(1, 6 - puzzleSize)}px`;
 
     const gridWidth = gridElement.clientWidth;
-    // Расчет размера плитки с учетом отступов (gap)
+    // Вычисляем размер плитки, вычитая отступы
     const gapValue = parseFloat(gridElement.style.gap);
     const tileSize = (gridWidth - (puzzleSize + 1) * gapValue) / puzzleSize;
     const fontSize = Math.max(8, tileSize * 0.4);
@@ -95,16 +124,18 @@ function renderPuzzle() {
             tile.textContent = '';
         } else {
             tile.textContent = value;
+            // Добавляем обработчик клика только для непустых плиток
             tile.addEventListener('click', () => handleTileClick(index));
         }
-        // Установка размеров плитки через grid уже должна быть достаточной, но оставляем для наглядности
-        // tile.style.width = `${tileSize}px`; 
-        // tile.style.height = `${tileSize}px`;
         gridElement.appendChild(tile);
     });
 }
 
 // --- Обработка Клика по Плитке ---
+/**
+ * Обрабатывает клик по плитке, перемещая ее, если это возможно.
+ * @param {number} tileIndex - Индекс плитки, по которой кликнули.
+ */
 function handleTileClick(tileIndex) {
     if (!gameInProgress) return;
 
@@ -113,9 +144,10 @@ function handleTileClick(tileIndex) {
         emptyIndex = tileIndex;
         renderPuzzle();
         movesCount++; // Увеличиваем счетчик ходов
-        movesCountElement.textContent = movesCount; // Обновляем счетчик ходов на экране
-        playMoveSound(); // Воспроизводим звук при перемещении плитки
+        movesCountElement.textContent = movesCount;
+        playMoveSound();
 
+        // Проверка условия поражения в режиме 'moves'
         if (gameMode === 'moves' && movesCount >= movesLimit) {
             stopTimer();
             messageElement.textContent = `☹️ Вы проиграли! Ходы закончились.`;
@@ -123,9 +155,10 @@ function handleTileClick(tileIndex) {
             return;
         }
 
+        // Проверка условия победы
         if (isSolved()) {
             stopTimer();
-            playWinSound(); // Воспроизводим звук победы
+            playWinSound();
             let message = `🎉 Пазл ${puzzleSize}x${puzzleSize} собран! `;
             if (gameMode === 'timed') {
                 message += `Время: ${timerElement.textContent}! `;
@@ -138,29 +171,43 @@ function handleTileClick(tileIndex) {
 }
 
 // --- Проверка Соседства Плиток (1D) ---
+/**
+ * Проверяет, являются ли две плитки соседними (по горизонтали или вертикали).
+ * @param {number} index1 - Индекс первой плитки.
+ * @param {number} index2 - Индекс второй плитки.
+ * @returns {boolean} - true, если плитки соседние.
+ */
 function isAdjacent(index1, index2) {
     const row1 = Math.floor(index1 / puzzleSize);
     const col1 = index1 % puzzleSize;
     const row2 = Math.floor(index2 / puzzleSize);
     const col2 = index2 % puzzleSize;
 
-    // Проверка, что плитки находятся рядом по вертикали или горизонтали, но не по диагонали
+    // Сосед по горизонтали или вертикали
     return (Math.abs(row1 - row2) === 1 && col1 === col2) || (Math.abs(col1 - col2) === 1 && row1 === row2);
 }
 
 // --- Обмен Плиток (1D) ---
+/**
+ * Меняет местами две плитки в массиве.
+ * @param {number} index1 - Индекс первой плитки.
+ * @param {number} index2 - Индекс второй плитки.
+ */
 function swapTiles(index1, index2) {
     [tiles[index1], tiles[index2]] = [tiles[index2], tiles[index1]];
 }
 
 // --- Перемешивание Пазла (делает случайные ходы) ---
+/**
+ * Перемешивает пазл, выполняя последовательность случайных допустимых ходов.
+ */
 function shufflePuzzle() {
     initializePuzzle();
 
+    // Количество ходов для перемешивания
     const shuffleMoves = puzzleSize * puzzleSize * (5 + puzzleSize);
-    let lastMovedIndex = -1;
+    let lastMovedIndex = -1; 
 
-    // Выполнение случайных, но допустимых ходов для перемешивания
     for (let i = 0; i < shuffleMoves; i++) {
         const possibleMoves = [];
         const emptyRow = Math.floor(emptyIndex / puzzleSize);
@@ -179,7 +226,7 @@ function shufflePuzzle() {
 
             if (neighborRow >= 0 && neighborRow < puzzleSize && neighborCol >= 0 && neighborCol < puzzleSize) {
                 const neighborIndex = neighborRow * puzzleSize + neighborCol;
-                // Избегаем немедленного возврата к предыдущему состоянию
+                // Исключаем плитку, которую только что переместили
                 if (neighborIndex !== lastMovedIndex) {
                     possibleMoves.push(neighborIndex);
                 }
@@ -192,33 +239,49 @@ function shufflePuzzle() {
             swapTiles(randomMoveIndex, emptyIndex);
             emptyIndex = randomMoveIndex;
         } else {
-            // Если нет возможных ходов (что не должно произойти в 15-пазле), пробуем снова
             i--;
         }
+    }
+    
+    // Проверка на решенное состояние после перемешивания (очень маловероятно, но нужно)
+    if (isSolved()) {
+        shufflePuzzle(); // Перемешиваем еще раз
+        return;
     }
 
     messageElement.textContent = '';
     renderPuzzle();
-    startTimer();
+    // Запускаем таймер, если режим 'timed'
+    if (gameMode === 'timed') {
+        startTimer();
+    }
     gameInProgress = true;
-    movesCount = 0; // Начинаем считать ходы после перемешивания
+    movesCount = 0; // Начинаем считать ходы
     movesCountElement.textContent = movesCount;
-    playShuffleSound(); // Воспроизводим звук при перемешивании
+    playShuffleSound();
 }
 
 // --- Проверка, Решен ли Пазл (1D) ---
+/**
+ * Проверяет, находится ли пазл в решенном состоянии.
+ * @returns {boolean} - true, если пазл решен.
+ */
 function isSolved() {
     for (let i = 0; i < tiles.length - 1; i++) {
-        // Проверяем, что значение плитки соответствует ожидаемому (i + 1)
         if (tiles[i] !== i + 1) {
             return false;
         }
     }
-    // Последняя плитка должна быть пустой
+    // Проверяем, что последняя позиция - пустая плитка
     return tiles[tiles.length - 1] === emptyTileValue;
 }
 
 // --- Управление Таймером ---
+/**
+ * Форматирует миллисекунды в строку "ММ:СС".
+ * @param {number} milliseconds - Время в миллисекундах.
+ * @returns {string} - Отформатированное время.
+ */
 function formatTime(milliseconds) {
     const totalSeconds = Math.floor(milliseconds / 1000);
     const minutes = Math.floor(totalSeconds / 60);
@@ -226,8 +289,11 @@ function formatTime(milliseconds) {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+/**
+ * Запускает или возобновляет таймер.
+ */
 function startTimer() {
-    if (gameMode === 'classic' || gameMode === 'moves') return; // Таймер только для режима 'timed'
+    if (gameMode !== 'timed') return; 
 
     stopTimer();
     startTime = Date.now();
@@ -238,46 +304,69 @@ function startTimer() {
     }, 1000);
 }
 
+/**
+ * Останавливает таймер.
+ */
 function stopTimer() {
     clearInterval(timerInterval);
     timerInterval = null;
 }
 
+/**
+ * Сбрасывает таймер.
+ */
 function resetTimer() {
     stopTimer();
     timerElement.textContent = '00:00';
     startTime = 0;
 }
 
+
 // --- Логика Эффекта Дождя ---
 const canvas = document.getElementById('rain-canvas');
 const ctx = canvas.getContext('2d');
 let drops = [];
 
+/**
+ * Изменяет размер холста под размер окна и инициализирует капли дождя.
+ */
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     initializeDrops();
 }
 
+/**
+ * Класс для отдельной капли дождя.
+ */
 class RainDrop {
     constructor() {
+        this.reset();
+    }
+    
+    // Сброс параметров капли для создания новой
+    reset() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * -canvas.height;
         this.length = Math.random() * 20 + 10;
         this.speed = Math.random() * 5 + 2;
         this.opacity = Math.random() * 0.5 + 0.3;
     }
+    
+    /**
+     * Обновляет положение капли.
+     */
     update() {
         this.y += this.speed;
         if (this.y > canvas.height) {
-            this.y = Math.random() * -50 - 20;
-            this.x = Math.random() * canvas.width;
-            this.speed = Math.random() * 5 + 2;
-            this.length = Math.random() * 20 + 10;
-            this.opacity = Math.random() * 0.5 + 0.3;
+            this.reset();
+            this.y = Math.random() * -50 - 20; 
         }
     }
+    
+    /**
+     * Отрисовывает каплю на холсте.
+     */
     draw() {
         ctx.beginPath();
         ctx.moveTo(this.x, this.y);
@@ -289,6 +378,9 @@ class RainDrop {
     }
 }
 
+/**
+ * Инициализирует массив капель дождя.
+ */
 function initializeDrops() {
     drops = [];
     const numberOfDrops = Math.floor(canvas.width / 5);
@@ -297,17 +389,41 @@ function initializeDrops() {
     }
 }
 
+/**
+ * Главный цикл анимации дождя.
+ */
 function animateRain() {
-    // Используем небольшую прозрачность для создания эффекта следа
-    ctx.fillStyle = 'rgba(163, 163, 163, 0.1)'; // Цвет фона #a3a3a3 с прозрачностью
-    ctx.fillRect(0, 0, canvas.width, canvas.height); 
-    
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Очистка холста
     drops.forEach(drop => {
         drop.update();
         drop.draw();
     });
     requestAnimationFrame(animateRain);
 }
+
+
+// --- Вспомогательные Функции ---
+
+/**
+ * Возвращает стартовое сообщение в зависимости от режима игры.
+ * @returns {string} - Сообщение для пользователя.
+ */
+function getStartMessage() {
+    switch (gameMode) {
+        case 'classic':
+            return 'Выберите размер и нажмите "Начать / Перемешать"';
+        case 'timed':
+            return 'Выберите размер и нажмите "Начать / Перемешать".  Игра на время!';
+        case 'moves':
+            // Пересчитываем movesLimit для отображения
+            const size = parseInt(sizeSelect.value);
+            const limit = size * size * 2;
+            return `Выберите размер и нажмите "Начать / Перемешать".  Лимит ходов: ${limit}`;
+        default:
+            return 'Выберите размер и нажмите "Начать / Перемешать"';
+    }
+}
+
 
 // --- Обработчики событий ---
 shuffleButton.addEventListener('click', shufflePuzzle);
@@ -323,6 +439,8 @@ modeSelect.addEventListener('change', () => {
     resetTimer();
     movesCount = 0;
     movesCountElement.textContent = movesCount;
+    
+    // Обновляем видимость счетчика ходов
     if (gameMode === 'moves') {
         movesCounterElement.style.display = 'flex';
         movesLimit = puzzleSize * puzzleSize * 2;
@@ -338,26 +456,18 @@ window.addEventListener('resize', () => {
     renderPuzzle();
 });
 
-// --- Функции-помощники ---
-
-function getStartMessage() {
-    switch (gameMode) {
-        case 'classic':
-            return 'Выберите размер и нажмите "Начать / Перемешать"';
-        case 'timed':
-            return 'Выберите размер и нажмите "Начать / Перемешать".  Игра на время!';
-        case 'moves':
-            return `Выберите размер и нажмите "Начать / Перемешать".  Лимит ходов: ${movesLimit}`;
-        default:
-            return 'Выберите размер и нажмите "Начать / Перемешать"';
-    }
-}
 
 // --- Инициализация и Запуск ---
-window.onload = () => {
+
+/**
+ * Запускает начальную инициализацию после загрузки DOM.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    // Убедитесь, что начальное значение размера установлено корректно
+    puzzleSize = parseInt(sizeSelect.value); 
     resizeCanvas();
     animateRain();
     initializePuzzle();
     renderPuzzle();
     messageElement.textContent = getStartMessage();
-};
+});
