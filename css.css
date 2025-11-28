@@ -67,7 +67,6 @@ body {
 #puzzle-grid {
     display: grid;
     /* grid-template-columns и gap будут установлены в JS */
-    /* Размеры также будут установлены в JS */
     border: 2px solid #9ca3af;
     border-radius: 8px;
     padding: 5px;
@@ -85,7 +84,6 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    /* font-size будет установлен в JS */
     font-weight: bold;
     background-color: #60a5fa;
     color: white;
@@ -94,8 +92,7 @@ body {
     transition: background-color 0.15s ease, transform 0.15s ease;
     user-select: none;
     box-shadow: inset 0 0 3px rgba(0,0,0,0.1);
-    /* width/height будут равны через grid */
-    overflow: hidden; /* Скрываем содержимое, выходящее за границы */
+    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -124,7 +121,7 @@ button {
     transition: background-color 0.2s ease;
     margin-top: 10px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-    width: auto; /* Кнопка подстраивается под контент */
+    width: auto;
 }
 button:hover {
     background-color: #059669;
@@ -141,15 +138,15 @@ button:hover {
 }
 .settings {
     display: flex;
-    justify-content: space-between; /* Размещаем элементы по краям */
-    align-items: center; /* Выравниваем по вертикали */
+    justify-content: space-between;
+    align-items: center;
     width: 100%;
     margin-bottom: 15px;
-    flex-wrap: wrap; /* Добавляем перенос на новую строку, если не помещается */
-    gap: 10px; /* Добавляем отступ между элементами */
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .settings > div, .settings > span {
-    margin-right: 0; /* Убираем отступ справа у дочерних div и span */
-    margin-bottom: 10px; /* добавляем отступ снизу */
+    margin-right: 0;
+    margin-bottom: 10px;
 }
