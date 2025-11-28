@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра-пазл (Пятнашки) - Расширенная версия</title>
+    <!-- Подключение Tailwind CSS для быстрой стилизации -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Подключение Tone.js для звуковых эффектов -->
+    <script src="https://unpkg.com/tone"></script>
+    
+    <!-- Подключение внешнего CSS файла -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Подключение шрифта Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Canvas для эффекта дождя -->
+    <canvas id="rain-canvas"></canvas>
+
+    <div class="game-container">
+        <h1 class="text-2xl font-bold mb-4 text-gray-800">Пазл "Пятнашки"</h1>
+
+        <div class="settings">
+            <div>
+                <label for="size-select">Размер:</label>
+                <select id="size-select">
+                    <option value="3">3x3</option>
+                    <option value="4">4x4</option>
+                    <option value="5">5x5</option>
+                    <option value="6">6x6</option>
+                    <option value="7">7x7</option>
+                    <option value="8">8x8</option>
+                    <option value="9">9x9</option>
+                    <option value="10">10x10</option>
+                </select>
+            </div>
+            <div>
+                <label for="mode-select">Режим:</label>
+                <select id="mode-select">
+                    <option value="classic">Классический</option>
+                    <option value="timed">На время</option>
+                    <option value="moves">На ходы</option>
+                </select>
+            </div>
+            <div>
+                <label>Время:</label>
+                <span id="timer">00:00</span>
+            </div>
+            <div id="moves-counter" style="display: none;">
+                <label>Ходы:</label>
+                <span id="moves-count">0</span>
+            </div>
+        </div>
+
+        <div id="puzzle-grid"></div>
+        <div id="message"></div>
+        <button id="shuffle-button">Начать / Перемешать</button>
+    </div>
+
+    <!-- Подключение внешнего JavaScript файла -->
+    <script src="script.js"></script>
+</body>
+</html>
