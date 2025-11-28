@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create a simple animation with moving elements</title>
+
+  <style>
+    
+  </style>
+
+  
+</head>
+<body>
+  <!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра-пазл (Пятнашки) - Расширенная версия</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/tone"></script>
+    <style>
+        /* Используем шрифт Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #a3a3a3; /* Фон для дождя */
+            overflow: hidden;
+            position: relative;
+        }
+        /* Canvas для эффекта дождя */
+        #rain-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        /* Стили для контейнера игры */
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            position: relative;
+            max-width: 95vw;
+            width: 95%; /* Изменено на относительную ширину */
+            max-height: 95vh; /* Добавлена максимальная высота */
+            height: auto;
+        }
+        /* Стили для настроек (размер, таймер, режим) */
+        .settings {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .settings label {
+            margin-right: 5px;
+            font-weight: bold;
+            color: #374151;
+        }
+        .settings select, .settings span {
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+        }
+        #timer {
+            font-weight: bold;
+            color: #1f2937;
+            background-color: #f3f4f6;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        /* Стили для сетки пазла */
+        #puzzle-grid {
+            display: grid;
+            /* grid-template-columns и gap будут установлены в JS */
+            /* Размеры также будут установлены в JS */
+            border: 2px solid #9ca3af;
+            border-radius: 8px;
+            padding: 5px;
+            margin-bottom: 20px;
+            background-color: #d1d5db;
+            width: 100%; /* Занимает всю доступную ширину контейнера */
+            height: auto;
+            aspect-ratio: 1 / 1;
+            max-width: 500px; /* Максимальная ширина */
+            max-height: 500px; /* Максимальная высота */
+            overflow: hidden;
+        }
+        /* Стили для плиток */
+        .tile {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* font-size будет установлен в JS */
+            font-weight: bold;
+            background-color: #60a5fa;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.15s ease, transform 0.15s ease;
+            user-select: none;
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.1);
+            /* width/height будут равны через grid */
+            overflow: hidden; /* Скрываем содержимое, выходящее за границы */
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* Стиль для пустой плитки */
+        .tile.empty {
+            background-color: #9ca3af;
+            cursor: default;
+            box-shadow: none;
+        }
+        /* Стиль при наведении на плитку (кроме пустой) */
+        .tile:not(.empty):hover {
+            background-color: #3b82f6;
+            transform: scale(1.05);
+            z-index: 2;
+            position: relative;
+        }
+        /* Стиль для кнопки */
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            color: white;
+            background-color: #10b981;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-top: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            width: auto; /* Кнопка подстраивается под контент */
+        }
+        button:hover {
+            background-color: #059669;
+        }
+        /* Стиль для сообщения */
+        #message {
+            margin-top: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #059669;
+            min-height: 22px;
+            text-align: center;
+            width: 100%;
+        }
+        .settings {
+            display: flex;
+            justify-content: space-between; /* Размещаем элементы по краям */
+            align-items: center; /* Выравниваем по вертикали */
+            width: 100%;
+            margin-bottom: 15px;
+            flex-wrap: wrap; /* Добавляем перенос на новую строку, если не помещается */
+            gap: 10px; /* Добавляем отступ между элементами */
+        }
+
+        .settings > div, .settings > span {
+            margin-right: 0; /* Убираем отступ справа у дочерних div и span */
+            margin-bottom: 10px; /* добавляем отступ снизу */
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <canvas id="rain-canvas"></canvas>
+
+    <div class="game-container">
+        <h1 class="text-2xl font-bold mb-4 text-gray-800">Пазл "Пятнашки"</h1>
+
+        <div class="settings">
+            <div>
+                <label for="size-select">Размер:</label>
+                <select id="size-select">
+                    <option value="3">3x3</option>
+                    <option value="4">4x4</option>
+                    <option value="5">5x5</option>
+                    <option value="6">6x6</option>
+                    <option value="7">7x7</option>
+                    <option value="8">8x8</option>
+                    <option value="9">9x9</option>
+                    <option value="10">10x10</option>
+                </select>
+            </div>
+            <div>
+                <label for="mode-select">Режим:</label>
+                <select id="mode-select">
+                    <option value="classic">Классический</option>
+                    <option value="timed">На время</option>
+                    <option value="moves">На ходы</option>
+                </select>
+            </div>
+            <div>
+                <label>Время:</label>
+                <span id="timer">00:00</span>
+            </div>
+            <div id="moves-counter" style="display: none;">
+                <label>Ходы:</label>
+                <span id="moves-count">0</span>
+            </div>
+        </div>
+
+        <div id="puzzle-grid"></div>
+        <div id="message"></div>
+        <button id="shuffle-button">Начать / Перемешать</button>
+    </div>
+
+    <script>
+        // --- Элементы DOM ---
+        const gridElement = document.getElementById('puzzle-grid');
+        const messageElement = document.getElementById('message');
+        const shuffleButton = document.getElementById('shuffle-button');
+        const sizeSelect = document.getElementById('size-select');
+        const timerElement = document.getElementById('timer');
+        const modeSelect = document.getElementById('mode-select');
+        const movesCounterElement = document.getElementById('moves-counter');
+        const movesCountElement = document.getElementById('moves-count');
+
+        // --- Состояние игры ---
+        let puzzleSize = parseInt(sizeSelect.value);
+        const emptyTileValue = null;
+        let tiles = [];
+        let emptyIndex = -1;
+        let timerInterval = null;
+        let startTime = 0;
+        let gameInProgress = false;
+        let movesCount = 0; // Счетчик ходов
+        let gameMode = 'classic'; // Режим игры: 'classic', 'timed', 'moves'
+        let movesLimit = 0; // Лимит ходов для режима 'moves'
+
+        // --- Звуковые эффекты (Tone.js) ---
+        const moveSynth = new Tone.Synth().toDestination();
+        const winSynth = new Tone.Synth().toDestination();
+        const shuffleSynth = new Tone.Synth().toDestination();
+
+        function playMoveSound() {
+            moveSynth.triggerAttackRelease("C4", "8n");
+        }
+
+        function playWinSound() {
+           // winSynth.triggerAttackRelease("G4", "1n");  // Simple tone
+            // More complex sound (a short chord progression)
+            const now = Tone.now();
+            winSynth.triggerAttackRelease("C5", "8n", now);
+            winSynth.triggerAttackRelease("E5", "8n", now + 0.2);
+            winSynth.triggerAttackRelease("G5", "8n", now + 0.4);
+            winSynth.triggerAttackRelease("C6", "1n", now + 0.6);
+        }
+
+        function playShuffleSound() {
+            // shuffleSynth.triggerAttackRelease("C3", "4n"); // Simple tone
+            // More complex sound (a quick slide)
+             const now = Tone.now();
+              shuffleSynth.triggerAttackRelease("C3", "8n", now);
+              shuffleSynth.triggerAttackRelease("D3", "8n", now + 0.1);
+              shuffleSynth.triggerAttackRelease("E3", "8n", now + 0.2);
+              shuffleSynth.triggerAttackRelease("F3", "8n", now + 0.3);
+        }
+
+
+
+        // --- Инициализация Пазла (1D массив) ---
+        function initializePuzzle() {
+            puzzleSize = parseInt(sizeSelect.value);
+            const totalTiles = puzzleSize * puzzleSize;
+            tiles = [];
+            for (let i = 1; i < totalTiles; i++) {
+                tiles.push(i);
+            }
+            tiles.push(emptyTileValue);
+            emptyIndex = totalTiles - 1;
+            messageElement.textContent = '';
+            gameInProgress = false;
+            resetTimer();
+            movesCount = 0; // Сбрасываем счетчик ходов
+            movesCountElement.textContent = movesCount; // Обновляем отображение ходов
+            if (gameMode === 'moves') {
+                movesCounterElement.style.display = 'flex';
+                movesLimit = puzzleSize * puzzleSize * 2; // Примерное значение лимита ходов
+                messageElement.textContent = `Лимит ходов: ${movesLimit}`;
+            } else {
+                movesCounterElement.style.display = 'none';
+            }
+        }
+
+        // --- Отрисовка Пазла ---
+        function renderPuzzle() {
+            gridElement.innerHTML = '';
+            gridElement.style.gridTemplateColumns = `repeat(${puzzleSize}, 1fr)`;
+            gridElement.style.gap = `${Math.max(1, 6 - puzzleSize)}px`;
+
+            const gridWidth = gridElement.clientWidth;
+            const tileSize = (gridWidth - (puzzleSize + 1) * parseFloat(gridElement.style.gap)) / puzzleSize;
+            const fontSize = Math.max(8, tileSize * 0.4);
+
+            tiles.forEach((value, index) => {
+                const tile = document.createElement('div');
+                tile.classList.add('tile');
+                tile.style.fontSize = `${fontSize}px`;
+
+                if (value === emptyTileValue) {
+                    tile.classList.add('empty');
+                    tile.textContent = '';
+                } else {
+                    tile.textContent = value;
+                    tile.addEventListener('click', () => handleTileClick(index));
+                }
+                tile.style.width = `${tileSize}px`;
+                tile.style.height = `${tileSize}px`;
+                gridElement.appendChild(tile);
+            });
+        }
+
+        // --- Обработка Клика по Плитке ---
+        function handleTileClick(tileIndex) {
+            if (!gameInProgress) return;
+
+            if (isAdjacent(tileIndex, emptyIndex)) {
+                swapTiles(tileIndex, emptyIndex);
+                emptyIndex = tileIndex;
+                renderPuzzle();
+                movesCount++; // Увеличиваем счетчик ходов
+                movesCountElement.textContent = movesCount; // Обновляем счетчик ходов на экране
+                playMoveSound(); // Воспроизводим звук при перемещении плитки
+
+                if (gameMode === 'moves' && movesCount >= movesLimit) {
+                    stopTimer();
+                    messageElement.textContent = `☹️ Вы проиграли! Ходы закончились.`;
+                    gameInProgress = false;
+                    return;
+                }
+
+                if (isSolved()) {
+                    stopTimer();
+                    playWinSound(); // Воспроизводим звук победы
+                    let message = `🎉 Пазл ${puzzleSize}x${puzzleSize} собран! `;
+                    if (gameMode === 'timed') {
+                        message += `Время: ${timerElement.textContent}! `;
+                    }
+                    message += `Количество ходов: ${movesCount} 🎉`;
+                    messageElement.textContent = message;
+                    gameInProgress = false;
+                }
+            }
+        }
+
+        // --- Проверка Соседства Плиток (1D) ---
+        function isAdjacent(index1, index2) {
+            const row1 = Math.floor(index1 / puzzleSize);
+            const col1 = index1 % puzzleSize;
+            const row2 = Math.floor(index2 / puzzleSize);
+            const col2 = index2 % puzzleSize;
+
+            return (Math.abs(row1 - row2) === 1 && col1 === col2) || (Math.abs(col1 - col2) === 1 && row1 === row2);
+        }
+
+        // --- Обмен Плиток (1D) ---
+        function swapTiles(index1, index2) {
+            [tiles[index1], tiles[index2]] = [tiles[index2], tiles[index1]];
+        }
+
+        // --- Перемешивание Пазла (делает случайные ходы) ---
+        function shufflePuzzle() {
+            initializePuzzle();
+
+            const shuffleMoves = puzzleSize * puzzleSize * (5 + puzzleSize);
+            let lastMovedIndex = -1;
+
+            for (let i = 0; i < shuffleMoves; i++) {
+                const possibleMoves = [];
+                const emptyRow = Math.floor(emptyIndex / puzzleSize);
+                const emptyCol = emptyIndex % puzzleSize;
+
+                const directions = [
+                    { dr: -1, dc: 0 },
+                    { dr: 1, dc: 0 },
+                    { dr: 0, dc: -1 },
+                    { dr: 0, dc: 1 }
+                ];
+
+                for (const dir of directions) {
+                    const neighborRow = emptyRow + dir.dr;
+                    const neighborCol = emptyCol + dir.dc;
+
+                    if (neighborRow >= 0 && neighborRow < puzzleSize && neighborCol >= 0 && neighborCol < puzzleSize) {
+                        const neighborIndex = neighborRow * puzzleSize + neighborCol;
+                        if (neighborIndex !== lastMovedIndex) {
+                            possibleMoves.push(neighborIndex);
+                        }
+                    }
+                }
+
+                if (possibleMoves.length > 0) {
+                    const randomMoveIndex = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                    lastMovedIndex = emptyIndex;
+                    swapTiles(randomMoveIndex, emptyIndex);
+                    emptyIndex = randomMoveIndex;
+                } else {
+                    i--;
+                }
+            }
+
+            messageElement.textContent = '';
+            renderPuzzle();
+            startTimer();
+            gameInProgress = true;
+            movesCount = 0; // Начинаем считать ходы после перемешивания
+            movesCountElement.textContent = movesCount;
+            playShuffleSound(); // Воспроизводим звук при перемешивании
+        }
+
+        // --- Проверка, Решен ли Пазл (1D) ---
+        function isSolved() {
+            for (let i = 0; i < tiles.length - 1; i++) {
+                if (tiles[i] !== i + 1) {
+                    return false;
+                }
+            }
+            return tiles[tiles.length - 1] === emptyTileValue;
+        }
+
+        // --- Управление Таймером ---
+        function formatTime(milliseconds) {
+            const totalSeconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            if (gameMode === 'classic' || gameMode === 'moves') return; // Таймер только для режима 'timed'
+
+            stopTimer();
+            startTime = Date.now();
+            timerElement.textContent = formatTime(0);
+            timerInterval = setInterval(() => {
+                const elapsedTime = Date.now() - startTime;
+                timerElement.textContent = formatTime(elapsedTime);
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        function resetTimer() {
+            stopTimer();
+            timerElement.textContent = '00:00';
+            startTime = 0;
+        }
+
+        // --- Логика Эффекта Дождя ---
+        const canvas = document.getElementById('rain-canvas');
+        const ctx = canvas.getContext('2d');
+        let drops = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initializeDrops();
+        }
+
+        class RainDrop {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * -canvas.height;
+                this.length = Math.random() * 20 + 10;
+                this.speed = Math.random() * 5 + 2;
+                this.opacity = Math.random() * 0.5 + 0.3;
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height) {
+                    this.y = Math.random() * -50 - 20;
+                    this.x = Math.random() * canvas.width;
+                    this.speed = Math.random() * 5 + 2;
+                    this.length = Math.random() * 20 + 10;
+                    this.opacity = Math.random() * 0.5 + 0.3;
+                }
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x, this.y + this.length);
+                ctx.strokeStyle = `rgba(173, 216, 230, ${this.opacity})`;
+                ctx.lineWidth = 1.5;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+        }
+
+        function initializeDrops() {
+            drops = [];
+            const numberOfDrops = Math.floor(canvas.width / 5);
+            for (let i = 0; i < numberOfDrops; i++) {
+                drops.push(new RainDrop());
+            }
+        }
+
+        function animateRain() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drops.forEach(drop => {
+                drop.update();
+                drop.draw();
+            });
+            requestAnimationFrame(animateRain);
+        }
+
+        // --- Обработчики событий ---
+        shuffleButton.addEventListener('click', shufflePuzzle);
+        sizeSelect.addEventListener('change', () => {
+            initializePuzzle();
+            renderPuzzle();
+            messageElement.textContent = getStartMessage();
+        });
+        modeSelect.addEventListener('change', () => {
+            gameMode = modeSelect.value;
+            initializePuzzle();
+            renderPuzzle();
+            resetTimer();
+            movesCount = 0;
+            movesCountElement.textContent = movesCount;
+            if (gameMode === 'moves') {
+                movesCounterElement.style.display = 'flex';
+                movesLimit = puzzleSize * puzzleSize * 2;
+                messageElement.textContent = `Лимит ходов: ${movesLimit}`;
+            } else {
+                movesCounterElement.style.display = 'none';
+                messageElement.textContent = getStartMessage();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            renderPuzzle();
+        });
+
+        // --- Функции ---
+
+        function getStartMessage() {
+            switch (gameMode) {
+                case 'classic':
+                    return 'Выберите размер и нажмите "Начать / Перемешать"';
+                case 'timed':
+                    return 'Выберите размер и нажмите "Начать / Перемешать".  Игра на время!';
+                case 'moves':
+                    return `Выберите размер и нажмите "Начать / Перемешать".  Лимит ходов: ${movesLimit}`;
+                default:
+                    return 'Выберите размер и нажмите "Начать / Перемешать"';
+            }
+        }
+
+        // --- Инициализация и Запуск ---
+        window.onload = () => {
+            resizeCanvas();
+            animateRain();
+            initializePuzzle();
+            renderPuzzle();
+            messageElement.textContent = getStartMessage();
+        };
+    </script>
+</body>
+</html>
+
+
+  <script>
+    
+  </script>
+</body>
+</html>
